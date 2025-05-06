@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cute Timer, Stopwatch, Weather & Fear-Greed</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Comic Neue -->
+  <link 
+href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" 
+rel="stylesheet">
+  <!-- React CDN -->
+  <script 
+src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+  <script 
+src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+  <!-- Babel CDN for JSX -->
+  <script 
+src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.5/babel.min.js"></script>
+  <style>
+    body {
+      font-family: 'Comic Neue', cursive;
+    }
+    /* Custom gauge style */
+    .gauge {
+      width: 100%;
+      height: 20px;
+      background: linear-gradient(to right, #3b82f6, #ec4899);
+      border-radius: 10px;
+      position: relative;
+    }
+    .gauge::before {
+      content: '';
+      position: absolute;
+      width: var(--value);
+      height: 100%;
+      background: #ffffff;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-pink-100 to-mint-100 flex items-center 
+justify-center min-h-screen p-4">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function App() {
+      // Timer states
+      const [timerMinutes, setTimerMinutes] = useState(0);
+      const [timerSeconds, setTimerSeconds] = useState(0);
+      const [inputMinutes, setInputMinutes] = useState('');
+      const [inputSeconds, setInputSeconds] = useState('');
+      const [isTimerRunning, setIsTimerRunning] = useState(false);
+
+      // Stopwatch states
+      const [stopwatchTime, setStopwatchTime] = useState(0);
+      const [isStopwatchRunning, setIsStopwatchRunning] = useState(false);
+
+      // Weather states
+      const [city, setCity] = useState('Seoul');
+      const [weather, setWeather] = useState(null);
+      const [inputCity, setInputCity] = useState('Seoul');
+
+      // Fear and Greed Index state (mock data)
+      const [fearGreed, setFearGreed] = useState({ value: 37, status: 
+'Fear' });
+
+      // Tab state
+      const [activeTab, setActiveTab] = useState('timer');
+
+      // Timer logic
+      useEffect(() => {
+        let timer;
+        if (isTimerRunning && (timerMinutes > 0 || timerSeconds > 0)) {
+          timer = setInterval(() => {
+            if (timerSeconds === 0) {
+              if (timerMinutes === 0) {
+                clearInterval(timer);
+                setIsTimerRunning(false);
+                alert('Time’s up! 🌟');
+              } else {
+                setTimerMinutes(timerMinutes - 1);
+                setTimerSeconds(59);
+              }
+            } else {
+              setTimerSeconds(timerSeconds - 1);
+            }
+          }, 1000);
+        }
+        return () => clearInterval(timer);
+      }, [isTimerRunning, timerMinutes, timerSeconds]);
+
+      // Stopwatch logic
+      useEffect(() => {
+        let stopwatch;
+        if (isStopwatchRunning) {
+          stopwatch = setInterval(() => {
+            setStopwatchTime((prev) => prev + 10);
+          }, 10);
+        }
+        return () => clearInterval(stopwatch);
+      }, [isStopwatchRunning]);
+
+      // Weather fetch
+      useEffect(() => {
+        const apiKey = 'YOUR_API_KEY'; // Replace with your OpenWeatherMap 
+API key
+        const url = 
+`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+        fetch(url)
+          .then((res) => {
+            if (!res.ok) throw new Error('City not found');
+            return res.json();
+          })
+          .then((data) => {
+            setWeather({
+              temp: data.main.temp,
+              condition: data.weather[0].main,
+              icon: 
+`http://openweathermap.org/img/wn/${data.weather[0].icon}.png`,
+            });
+          })
+          .catch((err) => {
+            console.error(err);
+            setWeather(null);
+          });
+      }, [city]);
+
+      // Mock Fear and Greed fetch (replace with real API if available)
+      useEffect(() => {
+        // Static data for demo (real API not publicly available)
+        setFearGreed({ value: 37, status: 'Fear' });
+      }, []);
+
+      // Timer handlers
+      const handleTimerStart = () => {
+        const min = parseInt(inputMinutes) || 0;
+        const sec = parseInt(inputSeconds) || 0;
+        if (min >= 0 && sec >= 0 && (min > 0 || sec > 0)) {
+          setTimerMinutes(min);
+          setTimerSeconds(sec);
+          setIsTimerRunning(true);
+        }
+      };
+
+      const handleTimerPause = () => {
+        setIsTimerRunning(false);
+      };
+
+      const handleTimerReset = () => {
+        setIsTimerRunning(false);
+        setTimerMinutes(0);
+        setTimerSeconds(0);
+        setInputMinutes('');
+        setInputSeconds('');
+      };
+
+      // Stopwatch handlers
+      const handleStopwatchStart = () => {
+        setIsStopwatchRunning(true);
+      };
+
+      const handleStopwatchPause = () => {
+        setIsStopwatchRunning(false);
+      };
+
+      const handleStopwatchReset = () => {
+        setIsStopwatchRunning(false);
+        setStopwatchTime(0);
+      };
+
+      // Format stopwatch time
+      const formatStopwatchTime = () => {
+        const hours = Math.floor(stopwatchTime / 3600000);
+        const minutes = Math.floor((stopwatchTime % 3600000) / 60000);
+        const seconds = Math.floor((stopwatchTime % 60000) / 1000);
+        const milliseconds = Math.floor((stopwatchTime % 1000) / 10);
+        return `${String(hours).padStart(2, 
+'0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, 
+'0')}.${String(milliseconds).padStart(2, '0')}`;
+      };
+
+      // Weather handler
+      const handleCityChange = () => {
+        if (inputCity.trim()) {
+          setCity(inputCity.trim());
+        }
+      };
+
+      return (
+        <div className="flex flex-col lg:flex-row gap-4 w-full max-w-6xl 
+mx-auto">
+          {/* Timer/Stopwatch Card */}
+          <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg flex-1 
+text-center bg-gradient-to-br from-pink-200 to-purple-200">
+            <div className="flex justify-center mb-4">
+              <button
+                onClick={() => setActiveTab('timer')}
+                className={`px-3 sm:px-4 py-2 rounded-l-full font-bold 
+text-sm sm:text-base ${activeTab === 'timer' ? 'bg-pink-400 text-white' : 
+'bg-gray-200 text-gray-700'} transition-all`}
+              >
+                Timer ⏰
+              </button>
+              <button
+                onClick={() => setActiveTab('stopwatch')}
+                className={`px-3 sm:px-4 py-2 rounded-r-full font-bold 
+text-sm sm:text-base ${activeTab === 'stopwatch' ? 'bg-purple-400 
+text-white' : 'bg-gray-200 text-gray-700'} transition-all`}
+              >
+                Stopwatch �偶소리
+              >
+                Stopwatch 🕒
+              </button>
+            </div>
+
+            {activeTab === 'timer' ? (
+              <>
+                <h1 className="text-xl sm:text-2xl font-bold mb-4 
+text-purple-600">Timer 🌸</h1>
+                <div className="text-4xl sm:text-5xl font-mono mb-4 
+text-pink-600">
+                  {String(timerMinutes).padStart(2, 
+'0')}:{String(timerSeconds).padStart(2, '0')}
+                </div>
+                <div className="flex space-x-2 mb-4 justify-center">
+                  <input
+                    type="number"
+                    value={inputMinutes}
+                    onChange={(e) => setInputMinutes(e.target.value)}
+                    placeholder="Min"
+                    className="border-2 border-pink-300 p-2 rounded-lg 
+w-1/3 bg-white focus:outline-none focus:border-purple-400 text-sm 
+sm:text-base"
+                    disabled={isTimerRunning}
+                  />
+                  <input
+                    type="number"
+                    value={inputSeconds}
+                    onChange={(e) => setInputSeconds(e.target.value)}
+                    placeholder="Sec"
+                    className="border-2 border-pink-300 p-2 rounded-lg 
+w-1/3 bg-white focus:outline-none focus:border-purple-400 text-sm 
+sm:text-base"
+                    disabled={isTimerRunning}
+                  />
+                </div>
+                <div className="flex space-x-2 sm:space-x-3 
+justify-center">
+                  <button
+                    onClick={handleTimerStart}
+                    className="bg-pink-500 text-white px-4 sm:px-5 py-2 
+rounded-full hover:bg-pink-600 transform hover:scale-105 transition 
+text-sm sm:text-base"
+                    disabled={isTimerRunning}
+                  >
+                    Start 🚀
+                  </button>
+                  <button
+                    onClick={handleTimerPause}
+                    className="bg-yellow-400 text-white px-4 sm:px-5 py-2 
+rounded-full hover:bg-yellow-500 transform hover:scale-105 transition 
+text-sm sm:text-base"
+                    disabled={!isTimerRunning}
+                  >
+                    Pause 😴
+                  </button>
+                  <button
+                    onClick={handleTimerReset}
+                    className="bg-purple-500 text-white px-4 sm:px-5 py-2 
+rounded-full hover:bg-purple-600 transform hover:scale-105 transition 
+text-sm sm:text-base"
+                  >
+                    Reset 🔄
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h1 className="text-xl sm:text-2xl font-bold mb-4 
+text-purple-600">Stopwatch 🐾</h1>
+                <div className="text-4xl sm:text-5xl font-mono mb-4 
+text-pink-600">
+                  {formatStopwatchTime()}
+                </div>
+                <div className="flex space-x-2 sm:space-x-3 
+justify-center">
+                  <button
+                    onClick={handleStopwatchStart}
+                    className="bg-pink-500 text-white px-4 sm:px-5 py-2 
+rounded-full hover:bg-pink-600 transform hover:scale-105 transition 
+text-sm sm:text-base"
+                    disabled={isStopwatchRunning}
+                  >
+                    Start 🏃
+                  </button>
+                  <button
+                    onClick={handleStopwatchPause}
+                    className="bg-yellow-400 text-white px-4 sm:px-5 py-2 
+rounded-full hover:bg-yellow-500 transform hover:scale-105 transition 
+text-sm sm:text-base"
+                    disabled={!isStopwatchRunning}
+                  >
+                    Pause 🛑
+                  </button>
+                  <button
+                    onClick={handleStopwatchReset}
+                    className="bg-purple-500 text-white px-4 sm:px-5 py-2 
+rounded-full hover:bg-purple-600 transform hover:scale-105 transition 
+text-sm sm:text-base"
+                  >
+                    Reset 🔄
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Weather and Fear-Greed Card */}
+          <div className="flex flex-col gap-4 flex-1">
+            {/* Weather Card */}
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg 
+text-center bg-gradient-to-br from-mint-200 to-blue-200">
+              <h1 className="text-xl sm:text-2xl font-bold mb-4 
+text-blue-600">Today’s Weather ☀️</h1>
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={inputCity}
+                  onChange={(e) => setInputCity(e.target.value)}
+                  placeholder="Enter city"
+                  className="border-2 border-blue-300 p-2 rounded-lg w-2/3 
+bg-white focus:outline-none focus:border-blue-400 text-sm sm:text-base"
+                />
+                <button
+                  onClick={handleCityChange}
+                  className="bg-blue-500 text-white px-3 sm:px-4 py-2 
+rounded-full ml-2 hover:bg-blue-600 transform hover:scale-105 transition 
+text-sm sm:text-base"
+                >
+                  Search 🔍
+                </button>
+              </div>
+              {weather ? (
+                <div>
+                  <h2 className="text-lg sm:text-xl mb-2 
+text-blue-600">{city}</h2>
+                  <img src={weather.icon} alt="Weather icon" 
+className="mx-auto mb-2 w-12 sm:w-16 h-12 sm:h-16" />
+                  <p className="text-base sm:text-lg text-blue-700">Temp: 
+{weather.temp}°C</p>
+                  <p className="text-base sm:text-lg 
+text-blue-700">Condition: {weather.condition}</p>
+                </div>
+              ) : (
+                <p className="text-blue-600 text-sm sm:text-base">Loading 
+weather or city not found... 🌧️</p>
+              )}
+            </div>
+
+            {/* Fear and Greed Card */}
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg 
+text-center bg-gradient-to-br from-blue-200 to-pink-200">
+              <h1 className="text-xl sm:text-2xl font-bold mb-4 
+text-pink-600">Fear & Greed Index 📈</h1>
+              <div className="mb-4">
+                <p className="text-base sm:text-lg text-pink-700">Index: 
+{fearGreed.value}</p>
+                <p className="text-base sm:text-lg text-pink-700">Status: 
+{fearGreed.status} {fearGreed.value < 50 ? '😟' : '😊'}</p>
+                <div className="gauge mt-2" style={{ '--value': 
+`${fearGreed.value}%` }}></div>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">0 
+(Fear) - 100 (Greed)</p>
+              </div>
+              <p className="text-xs sm:text-sm text-pink-600">Data from 
+CNN Business (mock) 📰</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
